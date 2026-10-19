@@ -36,6 +36,7 @@ Stores cleaned, verified historical observations:
 - `humidity` (DECIMAL(5,2), Nullable)
 - `rainfall` (DECIMAL(7,2), Nullable)
 - `created_at` (TIMESTAMP, Default CURRENT_TIMESTAMP)
+- **Constraints**: `UNIQUE KEY uq_date_location (observation_date, location)`
 - **Index**: `idx_date_location (observation_date, location)`
 
 ### 3. `data_quality_issues`
@@ -58,46 +59,74 @@ The ingestion engine (`backend/services/importService.js`) processes uploaded CS
 3. **Temperature Bounds**: Terrestrial plausible range: `-60°C` to `+60°C`. Out-of-bounds values rejected.
 4. **Humidity Bounds**: Relative humidity must be between `0%` and `100%`.
 5. **Rainfall Bounds**: Non-negative decimal (`>= 0 mm`) up to single-day threshold (`1500 mm`).
-6. **Traceability**: If any row fails one or more rules, the row is rejected from `weather_records` and logged to `data_quality_issues` with exact `source_row_number`.
+6. **Missing Measurement Preservation**: Missing observations for temperature, humidity, or rainfall are stored as `NULL` in MySQL and NEVER converted to zero.
+7. **Traceability**: If any row fails one or more rules, the row is rejected from `weather_records` and logged to `data_quality_issues` with exact `source_row_number`.
+8. **Duplicate Handling**: Duplicates are checked across the batch and against the database. Duplicates are rejected and recorded in `data_quality_issues` to protect the unique constraint on `(observation_date, location)`.
 
 ---
 
-## 5. API Endpoints
+## 5. Python Analytics Engine (`analysis/`)
 
-### System Health
-- `GET /api/health` — Returns DB connection status and server timestamp.
+The Python statistical engine is structured into modular components:
 
-### CSV Import
-- `POST /api/import/upload` — Multi-part CSV file upload.
-- `GET /api/import/batches` — List import history with pagination.
-- `GET /api/import/batches/:batchId/issues` — Detailed quality issues for a batch.
+### Modules
+1. **`analysis/validate_data.py`**:
+   - Validates CSV files or DataFrames before ingestion or analysis.
+   - Detects missing required columns, missing values, invalid date formats, future dates, non-numeric measurements, out-of-range humidity (0–100%), negative rainfall, implausible temperatures (-60°C to +60°C), and duplicate records.
+   - CLI: `python validate_data.py <path_to_csv>`
+2. **`analysis/analyze_weather.py`**:
+   - Calculates daily and monthly minimum, maximum, and average temperature, humidity, and rainfall.
+   - Computes monthly rainfall totals and compares monthly average temperatures across monitoring locations.
+   - Calculates parametric and non-parametric descriptive statistics (mean, std, min, 25%, median, 75%, max, IQR, skewness) using NumPy and Pandas.
+   - Computes Pearson correlation matrix (temperature, humidity, rainfall).
+   - Detects historical climate anomalies ($|Z| > 2.5\sigma$).
+   - CLI: `python analyze_weather.py [--csv <path>] [--location <loc>] [--start-date <YYYY-MM-DD>] [--end-date <YYYY-MM-DD>]`
+3. **`analysis/generate_charts.py`**:
+   - Uses non-interactive Matplotlib backend (`Agg`) to generate publication-grade figures saved to `analysis/charts/`:
+     - `temperature_trends.png`: Monthly min, avg, and max temperature variation envelopes with units (°C).
+     - `monthly_rainfall.png`: Monthly cumulative precipitation bar charts with values in millimeters (mm).
+     - `monthly_temperature_comparison.png`: Comparison of monthly average temperatures across monitoring locations.
+     - `humidity_trends.png`: Relative humidity trends and variations over time (0–100%).
+     - `temperature_distribution.png`: Histogram and KDE distribution with mean/median markers.
+     - `humidity_rainfall_scatter.png`: Scatter plot with colormapped temperature variation.
+   - CLI: `python generate_charts.py --csv <path>`
+4. **`analysis/test_analysis.py`**:
+   - Comprehensive automated test suite verifying validation rules, statistical aggregations, chart generation, and database integration.
 
-### Weather Records & Trends
-- `GET /api/weather/records` — Filtered observations (by location, date range, min/max temp, sort, pagination).
-- `GET /api/weather/locations` — Unique monitoring locations list.
-- `GET /api/weather/summary` — High-level KPIs, top extremes, regional summary.
-- `GET /api/weather/trends` — Monthly aggregated means, min/max envelopes for Recharts.
-- `GET /api/weather/export` — Stream filtered observations as CSV.
-
-### Statistical Analysis
-- `POST /api/analysis/run` — Triggers Python analytics engine (`analysis/analyze.py`).
-- `GET /api/analysis/latest` — Fetches cached or latest statistical engine results.
-- `GET /api/charts/:filename` — Serves generated Matplotlib figures.
+### Safe Node.js Invocation on Windows
+The Node.js controller ([`backend/controllers/analysisController.js`](file:///C:/Users/subha/Projects/WeatherAnalizer/backend/controllers/analysisController.js)) invokes Python using `child_process.spawn`:
+- **Python Executable**: Resolved explicitly to `.venv\Scripts\python.exe` on Windows (or `.venv/bin/python` on POSIX).
+- **Shell-Injection Immunity**: Options are passed via a structured array of arguments (`[scriptPath, '--location', loc, ...]`) with `shell: false`. No arguments are passed through `cmd.exe` or PowerShell command strings.
+- **Clean Stream Separation**: Python writes diagnostics and warnings to `sys.stderr` and strictly valid JSON to `sys.stdout`, preventing JSON parsing corruption in Node.js.
 
 ---
 
-## 6. How to Run
+## 6. How to Run and Test
 
-### Backend Development Server
+### 1. Run Python Test Suite
 ```bash
-cd backend
-npm run dev
-# Running on http://localhost:5000
+.\.venv\Scripts\python.exe analysis\test_analysis.py
 ```
 
-### Frontend Development Server
+### 2. Run Backend Test Suite
 ```bash
+cd backend
+npm test
+```
+
+### 3. Run Safe Database Migrations
+```bash
+cd backend
+npm run migrate
+```
+
+### 4. Start Development Servers
+```bash
+# Terminal 1: Backend API (port 5000)
+cd backend
+npm run dev
+
+# Terminal 2: React Frontend (port 5173)
 cd frontend
 npm run dev
-# Running on http://localhost:5173
 ```

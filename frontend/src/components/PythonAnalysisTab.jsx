@@ -131,6 +131,49 @@ export default function PythonAnalysisTab() {
             </div>
           </div>
 
+          {/* Monthly Aggregations & Rainfall Totals */}
+          {analysis.monthly_aggregations && analysis.monthly_aggregations.length > 0 && (
+            <div className="card mb-4">
+              <div className="card-header">
+                <h3>📅 Monthly Historical Climate Aggregations & Precipitation Totals</h3>
+              </div>
+              <div className="card-body">
+                <div className="table-responsive">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Period</th>
+                        <th>Observations</th>
+                        <th>Avg Temp (°C)</th>
+                        <th>Min Temp (°C)</th>
+                        <th>Max Temp (°C)</th>
+                        <th>Avg Humidity (%)</th>
+                        <th>Total Rainfall (mm)</th>
+                        <th>Max Daily Rain (mm)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analysis.monthly_aggregations.map((m) => (
+                        <tr key={m.period}>
+                          <td><strong>{m.period}</strong></td>
+                          <td>{m.record_count}</td>
+                          <td>{m.avg_temperature !== null ? `${m.avg_temperature} °C` : '—'}</td>
+                          <td>{m.min_temperature !== null ? `${m.min_temperature} °C` : '—'}</td>
+                          <td>{m.max_temperature !== null ? `${m.max_temperature} °C` : '—'}</td>
+                          <td>{m.avg_humidity !== null ? `${m.avg_humidity} %` : '—'}</td>
+                          <td>
+                            <span className="badge badge-primary">{m.total_rainfall} mm</span>
+                          </td>
+                          <td>{m.max_single_day_rainfall} mm</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Correlations & Anomaly Highlights */}
           <div className="two-col-grid mb-4">
             {/* Correlation Matrix */}

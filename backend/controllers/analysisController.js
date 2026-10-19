@@ -4,22 +4,41 @@ const fs = require('fs');
 
 let cachedAnalysis = null;
 
+/**
+ * Locate the virtual environment Python executable on Windows or POSIX
+ */
 function findPythonPath() {
-  const rootVenvPython = path.resolve(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe');
-  if (fs.existsSync(rootVenvPython)) {
-    return rootVenvPython;
+  const rootVenvPythonWin = path.resolve(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe');
+  if (fs.existsSync(rootVenvPythonWin)) {
+    return rootVenvPythonWin;
   }
-  const rootVenvBinPython = path.resolve(__dirname, '..', '..', '.venv', 'bin', 'python');
-  if (fs.existsSync(rootVenvBinPython)) {
-    return rootVenvBinPython;
+  const rootVenvPythonPosix = path.resolve(__dirname, '..', '..', '.venv', 'bin', 'python');
+  if (fs.existsSync(rootVenvPythonPosix)) {
+    return rootVenvPythonPosix;
   }
   return 'python';
 }
 
-function runAnalysisScript() {
+/**
+ * Safely executes Python analysis script using child_process.spawn with an arguments array.
+ * This guarantees shell-injection immunity by passing arguments directly to the OS process without shell interpolation.
+ */
+function runAnalysisScript(options = {}) {
   return new Promise((resolve, reject) => {
     const pythonPath = findPythonPath();
-    const scriptPath = path.resolve(__dirname, '..', '..', 'analysis', 'analyze.py');
+    const scriptPath = path.resolve(__dirname, '..', '..', 'analysis', 'analyze_weather.py');
+
+    // Build argument list safely
+    const args = [scriptPath];
+    if (options.location && options.location !== 'ALL') {
+      args.push('--location', String(options.location));
+    }
+    if (options.startDate) {
+      args.push('--start-date', String(options.startDate));
+    }
+    if (options.endDate) {
+      args.push('--end-date', String(options.endDate));
+    }
 
     const env = {
       ...process.env,
@@ -30,9 +49,10 @@ function runAnalysisScript() {
       DB_NAME: process.env.DB_NAME
     };
 
-    const pyProcess = spawn(pythonPath, [scriptPath], {
+    const pyProcess = spawn(pythonPath, args, {
       cwd: path.resolve(__dirname, '..', '..', 'analysis'),
-      env
+      env,
+      shell: false // Prevent shell injection
     });
 
     let stdout = '';
@@ -48,8 +68,9 @@ function runAnalysisScript() {
 
     pyProcess.on('close', (code) => {
       if (code !== 0) {
-        console.error('Python analysis process exited with code:', code, stderr);
-        return reject(new Error(stderr || `Python analysis process exited with code ${code}`));
+        console.error('Python analysis process exited with code:', code);
+        console.error('Python diagnostics (stderr):', stderr);
+        return reject(new Error(stderr || `Python analysis engine exited with code ${code}`));
       }
 
       try {
@@ -57,13 +78,14 @@ function runAnalysisScript() {
         cachedAnalysis = parsed;
         resolve(parsed);
       } catch (err) {
-        console.error('Failed to parse Python analysis stdout as JSON:', stdout);
+        console.error('Failed to parse Python JSON stdout:', stdout);
+        console.error('Python diagnostics (stderr):', stderr);
         reject(new Error('Invalid output format from Python analysis engine'));
       }
     });
 
     pyProcess.on('error', (err) => {
-      console.error('Failed to start Python process:', err);
+      console.error('Failed to spawn Python process:', err);
       reject(err);
     });
   });
@@ -71,7 +93,13 @@ function runAnalysisScript() {
 
 async function triggerAnalysis(req, res) {
   try {
-    const result = await runAnalysisScript();
+    const options = {
+      location: req.query.location || req.body?.location,
+      startDate: req.query.startDate || req.query.from || req.body?.startDate,
+      endDate: req.query.endDate || req.query.to || req.body?.endDate
+    };
+
+    const result = await runAnalysisScript(options);
     res.json({
       status: 'success',
       data: result
@@ -87,13 +115,21 @@ async function triggerAnalysis(req, res) {
 
 async function getLatestAnalysis(req, res) {
   try {
-    if (!cachedAnalysis) {
-      const result = await runAnalysisScript();
+    const options = {
+      location: req.query.location,
+      startDate: req.query.startDate || req.query.from,
+      endDate: req.query.endDate || req.query.to
+    };
+
+    // If filters are requested or no cache yet, run analysis
+    if (!cachedAnalysis || options.location || options.startDate || options.endDate) {
+      const result = await runAnalysisScript(options);
       return res.json({
         status: 'success',
         data: result
       });
     }
+
     res.json({
       status: 'success',
       data: cachedAnalysis
@@ -109,5 +145,7 @@ async function getLatestAnalysis(req, res) {
 
 module.exports = {
   triggerAnalysis,
-  getLatestAnalysis
+  getLatestAnalysis,
+  runAnalysisScript,
+  findPythonPath
 };
