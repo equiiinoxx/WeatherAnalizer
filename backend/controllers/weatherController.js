@@ -1,13 +1,17 @@
 const weatherService = require('../services/weatherService');
 
+/**
+ * List weather records with pagination, location, and date-range filtering
+ * Endpoint: GET /api/weather & GET /api/weather/records
+ */
 async function listRecords(req, res) {
   try {
     const filters = {
       page: req.query.page,
       limit: req.query.limit,
       location: req.query.location,
-      startDate: req.query.startDate,
-      endDate: req.query.endDate,
+      startDate: req.query.startDate || req.query.from,
+      endDate: req.query.endDate || req.query.to,
       minTemp: req.query.minTemp,
       maxTemp: req.query.maxTemp,
       search: req.query.search,
@@ -29,6 +33,10 @@ async function listRecords(req, res) {
   }
 }
 
+/**
+ * List available locations
+ * Endpoint: GET /api/weather/locations
+ */
 async function getLocations(req, res) {
   try {
     const locations = await weatherService.getLocations();
@@ -45,12 +53,16 @@ async function getLocations(req, res) {
   }
 }
 
+/**
+ * Get summary metrics & historical KPIs
+ * Endpoint: GET /api/weather/summary
+ */
 async function getSummary(req, res) {
   try {
     const filters = {
       location: req.query.location,
-      startDate: req.query.startDate,
-      endDate: req.query.endDate
+      startDate: req.query.startDate || req.query.from,
+      endDate: req.query.endDate || req.query.to
     };
 
     const result = await weatherService.getSummaryMetrics(filters);
@@ -67,12 +79,16 @@ async function getSummary(req, res) {
   }
 }
 
+/**
+ * Get time-series trends
+ * Endpoint: GET /api/weather/trends
+ */
 async function getTrends(req, res) {
   try {
     const filters = {
       location: req.query.location,
-      startDate: req.query.startDate,
-      endDate: req.query.endDate
+      startDate: req.query.startDate || req.query.from,
+      endDate: req.query.endDate || req.query.to
     };
 
     const result = await weatherService.getTrends(filters);
@@ -89,12 +105,16 @@ async function getTrends(req, res) {
   }
 }
 
+/**
+ * Export filtered records to CSV
+ * Endpoint: GET /api/weather/export
+ */
 async function exportCsv(req, res) {
   try {
     const filters = {
       location: req.query.location,
-      startDate: req.query.startDate,
-      endDate: req.query.endDate,
+      startDate: req.query.startDate || req.query.from,
+      endDate: req.query.endDate || req.query.to,
       minTemp: req.query.minTemp,
       maxTemp: req.query.maxTemp,
       search: req.query.search

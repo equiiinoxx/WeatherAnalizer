@@ -12,14 +12,16 @@ function buildFilterClause(filters) {
     params.push(filters.location.trim());
   }
 
-  if (filters.startDate) {
+  const startDate = filters.startDate || filters.from;
+  if (startDate) {
     conditions.push('observation_date >= ?');
-    params.push(filters.startDate);
+    params.push(startDate);
   }
 
-  if (filters.endDate) {
+  const endDate = filters.endDate || filters.to;
+  if (endDate) {
     conditions.push('observation_date <= ?');
-    params.push(filters.endDate);
+    params.push(endDate);
   }
 
   if (filters.minTemp !== undefined && filters.minTemp !== null && filters.minTemp !== '') {

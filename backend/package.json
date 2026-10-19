@@ -1,14 +1,21 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Weather Data Analysis System - Backend API",
+  "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "migrate": "node scripts/migrate.js",
+    "test": "node scripts/test-backend.js"
   },
-  "keywords": [],
+  "keywords": [
+    "weather",
+    "historical-data",
+    "data-quality",
+    "express",
+    "mysql"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
