@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS `weather_records` (
   `rainfall` decimal(7,2) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`record_id`),
+  UNIQUE KEY `uq_date_location` (`observation_date`,`location`),
   KEY `idx_date_location` (`observation_date`,`location`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
