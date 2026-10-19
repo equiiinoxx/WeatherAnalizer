@@ -90,7 +90,7 @@ class TestWeatherAnalytics(unittest.TestCase):
         temp_stats = stats['temperature']
         self.assertGreater(temp_stats['mean'], 0)
         self.assertGreater(temp_stats['max'], temp_stats['min'])
-        self.assertEqual(temp_stats['median'], temp_stats['q50'] if 'q50' in temp_stats else temp_stats['median'])
+        self.assertIn('count', temp_stats)
 
         # Check monthly aggregations and rainfall totals
         monthly = analysis['monthly_aggregations']
@@ -105,13 +105,6 @@ class TestWeatherAnalytics(unittest.TestCase):
         self.assertGreater(len(comp), 0)
         first_month = list(comp.keys())[0]
         self.assertGreater(len(comp[first_month]), 1)
-
-        # Check Pearson correlations
-        corrs = analysis['correlations']
-        self.assertIn('temp_humidity', corrs)
-        self.assertIn('temp_rainfall', corrs)
-        self.assertIn('humidity_rainfall', corrs)
-        self.assertTrue(-1.0 <= corrs['temp_humidity'] <= 1.0)
 
     def test_empty_dataset_handling(self):
         """Empty DataFrame should not throw an exception and return empty status"""

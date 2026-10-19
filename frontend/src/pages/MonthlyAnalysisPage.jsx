@@ -187,76 +187,52 @@ export default function MonthlyAnalysisPage() {
         </div>
       )}
 
-      {/* Pearson Correlations & Parametric Summary */}
-      {analysis?.correlations && (
-        <div className="two-column-grid">
-          <div className="card">
-            <div className="card-header">
-              <h3>🔗 Pearson Correlation Matrix</h3>
-            </div>
-            <div className="card-body">
-              <div className="corr-grid">
-                <div className="corr-card">
-                  <span className="corr-title">Temperature ⟷ Humidity</span>
-                  <span className="corr-val text-primary">
-                    {analysis.correlations.temp_humidity}
-                  </span>
-                  <span className="corr-desc">
-                    {analysis.correlations.temp_humidity > 0 ? 'Positive Correlation' : 'Negative Correlation'}
-                  </span>
-                </div>
-
-                <div className="corr-card">
-                  <span className="corr-title">Temperature ⟷ Rainfall</span>
-                  <span className="corr-val text-orange">
-                    {analysis.correlations.temp_rainfall}
-                  </span>
-                  <span className="corr-desc">
-                    {analysis.correlations.temp_rainfall > 0 ? 'Positive Correlation' : 'Negative Correlation'}
-                  </span>
-                </div>
-
-                <div className="corr-card">
-                  <span className="corr-title">Humidity ⟷ Rainfall</span>
-                  <span className="corr-val text-teal">
-                    {analysis.correlations.humidity_rainfall}
-                  </span>
-                  <span className="corr-desc">
-                    {analysis.correlations.humidity_rainfall > 0 ? 'Positive Correlation' : 'Negative Correlation'}
-                  </span>
-                </div>
-              </div>
-            </div>
+      {/* Overall Summary Statistics (Min, Max, Mean) */}
+      {analysis?.descriptive_statistics && (
+        <div className="card mb-4">
+          <div className="card-header">
+            <h3>📊 Overall Summary Statistics (Calculated via Pandas & NumPy)</h3>
+            <span className="text-muted font-sm">
+              Minimum, maximum, and average values computed across all historical observations
+            </span>
           </div>
-
-          <div className="card">
-            <div className="card-header">
-              <h3>📐 Summary Parametric Bounds</h3>
-            </div>
-            <div className="card-body">
+          <div className="card-body">
+            <div className="table-responsive">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Variable</th>
-                    <th>Mean (μ)</th>
-                    <th>Std Dev (σ)</th>
-                    <th>Median</th>
-                    <th>IQR</th>
+                    <th>Measurement Variable</th>
+                    <th>Recorded Observations</th>
+                    <th>Minimum</th>
+                    <th>Average (Mean)</th>
+                    <th>Maximum</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(analysis?.descriptive_statistics || {}).map(([col, s]) => (
+                  {Object.entries(analysis.descriptive_statistics).map(([col, s]) => (
                     <tr key={col}>
                       <td className="text-capitalize">
                         <strong>
                           {col === 'temperature' ? '🌡️ Temperature (°C)' :
-                           col === 'humidity' ? '💧 Humidity (%)' : '🌧️ Rainfall (mm)'}
+                           col === 'humidity' ? '💧 Relative Humidity (%)' : '🌧️ Rainfall (mm)'}
                         </strong>
                       </td>
-                      <td>{s.mean}</td>
-                      <td>{s.std}</td>
-                      <td>{s.median}</td>
-                      <td>{s.iqr}</td>
+                      <td>{s.count?.toLocaleString()}</td>
+                      <td>
+                        <strong>
+                          {s.min !== null ? `${s.min} ${col === 'temperature' ? '°C' : col === 'humidity' ? '%' : 'mm'}` : '—'}
+                        </strong>
+                      </td>
+                      <td>
+                        <span className="badge badge-info font-bold">
+                          {s.mean !== null ? `${s.mean} ${col === 'temperature' ? '°C' : col === 'humidity' ? '%' : 'mm'}` : '—'}
+                        </span>
+                      </td>
+                      <td>
+                        <strong>
+                          {s.max !== null ? `${s.max} ${col === 'temperature' ? '°C' : col === 'humidity' ? '%' : 'mm'}` : '—'}
+                        </strong>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

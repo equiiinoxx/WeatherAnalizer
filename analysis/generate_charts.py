@@ -235,46 +235,6 @@ def generate_all_charts(df, location_filter=None, output_dir=None):
     except Exception as ex:
         sys.stderr.write(f"Error generating humidity_trends.png: {str(ex)}\n")
 
-    # -------------------------------------------------------------
-    # 5. Backward-Compatible / Additional Visualizations
-    # (temperature_distribution.png and humidity_rainfall_scatter.png)
-    # -------------------------------------------------------------
-    try:
-        # Temperature Distribution
-        fig, ax = plt.subplots(figsize=(8, 4.5), dpi=150)
-        temp_clean = df['temperature'].dropna()
-        if not temp_clean.empty:
-            ax.hist(temp_clean, bins=25, color='#3b82f6', edgecolor='#1e40af', alpha=0.75, density=True)
-            ax.axvline(temp_clean.mean(), color='#ef4444', linestyle='dashed', linewidth=2, label=f"Mean: {temp_clean.mean():.1f}°C")
-            ax.axvline(temp_clean.median(), color='#10b981', linestyle='solid', linewidth=2, label=f"Median: {temp_clean.median():.1f}°C")
-            ax.set_title(f"Historical Temperature Distribution ({loc_title})", pad=12)
-            ax.set_xlabel("Temperature (°C)")
-            ax.set_ylabel("Probability Density")
-            ax.legend(frameon=True, facecolor='white', framealpha=0.9)
-        out_path5 = os.path.join(output_dir, 'temperature_distribution.png')
-        fig.savefig(out_path5, bbox_inches='tight')
-        plt.close(fig)
-        generated['temperature_distribution'] = 'temperature_distribution.png'
-
-        # Humidity vs Rainfall Scatter
-        fig, ax = plt.subplots(figsize=(8, 4.5), dpi=150)
-        scatter_df = df.dropna(subset=['humidity', 'rainfall'])
-        if not scatter_df.empty:
-            scatter = ax.scatter(scatter_df['humidity'], scatter_df['rainfall'],
-                                 c=scatter_df['temperature'], cmap='coolwarm',
-                                 alpha=0.75, s=40)
-            cbar = plt.colorbar(scatter, ax=ax)
-            cbar.set_label('Temperature (°C)', fontsize=10)
-            ax.set_title(f"Humidity vs. Rainfall Correlation ({loc_title})", pad=12)
-            ax.set_xlabel("Relative Humidity (%)")
-            ax.set_ylabel("Rainfall (mm)")
-        out_path6 = os.path.join(output_dir, 'humidity_rainfall_scatter.png')
-        fig.savefig(out_path6, bbox_inches='tight')
-        plt.close(fig)
-        generated['humidity_rainfall_scatter'] = 'humidity_rainfall_scatter.png'
-    except Exception as ex:
-        sys.stderr.write(f"Error generating supplementary charts: {str(ex)}\n")
-
     return generated
 
 if __name__ == '__main__':

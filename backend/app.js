@@ -4,7 +4,6 @@ const path = require("path");
 require("dotenv").config();
 
 const pool = require("./config/db");
-const importRoutes = require("./routes/importRoutes");
 const weatherRoutes = require("./routes/weatherRoutes");
 const analysisRoutes = require("./routes/analysisRoutes");
 
@@ -40,7 +39,6 @@ app.use("/api/charts", express.static(chartsDir));
 
 // Route handlers
 app.use("/api/weather", weatherRoutes);
-app.use("/api/import", importRoutes);
 app.use("/api/analysis", analysisRoutes);
 
 // Root informational endpoint

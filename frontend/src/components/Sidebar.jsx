@@ -2,16 +2,6 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 
 export default function Sidebar({ health, isOpen, onClose }) {
-  const navItems = [
-    { to: '/', label: 'Overview', icon: '📊' },
-    { to: '/upload', label: 'CSV Upload', icon: '📤' },
-    { to: '/records', label: 'Weather Records', icon: '📜' },
-    { to: '/daily-summary', label: 'Daily Summary', icon: '📅' },
-    { to: '/monthly-analysis', label: 'Monthly Analysis', icon: '🗓️' },
-    { to: '/charts', label: 'Visual Charts', icon: '📈' },
-    { to: '/data-quality', label: 'Data Quality & Logs', icon: '🛡️' },
-  ];
-
   return (
     <>
       {/* Mobile backdrop */}
@@ -32,19 +22,37 @@ export default function Sidebar({ health, isOpen, onClose }) {
         </div>
 
         <nav className="sidebar-nav">
-          <div className="nav-group-label">MAIN NAVIGATION</div>
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
-              onClick={onClose}
-            >
-              <span className="link-icon">{item.icon}</span>
-              <span className="link-label">{item.label}</span>
-            </NavLink>
-          ))}
+          <div className="nav-group-label">PROJECT WORKSPACE</div>
+          <NavLink to="/" end className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="link-icon">📊</span>
+            <span className="link-label">Overview Dashboard</span>
+          </NavLink>
+          <NavLink to="/upload" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="link-icon">📤</span>
+            <span className="link-label">Upload Weather CSV</span>
+          </NavLink>
+          <NavLink to="/records" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="link-icon">📜</span>
+            <span className="link-label">Weather Records</span>
+          </NavLink>
+
+          <div className="nav-group-label">ANALYSIS & OUTPUTS</div>
+          <NavLink to="/monthly-analysis" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="link-icon">🗓️</span>
+            <span className="link-label">Monthly Summary</span>
+          </NavLink>
+          <NavLink to="/daily-summary" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="link-icon">📅</span>
+            <span className="link-label">Daily Min / Max / Avg</span>
+          </NavLink>
+          <NavLink to="/charts" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="link-icon">📈</span>
+            <span className="link-label">Weather Trends & Charts</span>
+          </NavLink>
+          <NavLink to="/data-quality" className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`} onClick={onClose}>
+            <span className="link-icon">🛡️</span>
+            <span className="link-label">Data Quality Report</span>
+          </NavLink>
         </nav>
 
         <div className="sidebar-footer">

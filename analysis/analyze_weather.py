@@ -132,28 +132,19 @@ def compute_analysis(df, location_filter=None, generate_plots=True):
     max_date = df['date_str'].max()
 
     # -------------------------------------------------------------
-    # 1. Descriptive Parametric & Non-Parametric Statistics
+    # 1. Descriptive Summary Statistics (Min, Max, Mean)
     # -------------------------------------------------------------
     desc_stats = {}
     for var in ['temperature', 'humidity', 'rainfall']:
         series = df[var].dropna()
         if not series.empty:
             arr = series.to_numpy()
-            q25 = float(np.percentile(arr, 25))
-            q50 = float(np.percentile(arr, 50))
-            q75 = float(np.percentile(arr, 75))
             desc_stats[var] = {
                 "count": int(series.count()),
                 "missing_count": int(df[var].isna().sum()),
                 "mean": round(float(np.mean(arr)), 2),
-                "std": round(float(np.std(arr, ddof=1)), 2) if len(arr) > 1 else 0.0,
                 "min": round(float(np.min(arr)), 2),
-                "q25": round(q25, 2),
-                "median": round(q50, 2),
-                "q75": round(q75, 2),
-                "max": round(float(np.max(arr)), 2),
-                "iqr": round(q75 - q25, 2),
-                "skewness": round(float(series.skew()), 2) if len(arr) > 2 else 0.0
+                "max": round(float(np.max(arr)), 2)
             }
 
     # -------------------------------------------------------------
@@ -247,41 +238,7 @@ def compute_analysis(df, location_filter=None, generate_plots=True):
         })
 
     # -------------------------------------------------------------
-    # 5. Pearson Correlation Matrix
-    # -------------------------------------------------------------
-    corr_df = df[['temperature', 'humidity', 'rainfall']].corr(method='pearson')
-    correlations = {
-        "temp_humidity": round(float(corr_df.loc['temperature', 'humidity']), 3) if not np.isnan(corr_df.loc['temperature', 'humidity']) else 0.0,
-        "temp_rainfall": round(float(corr_df.loc['temperature', 'rainfall']), 3) if not np.isnan(corr_df.loc['temperature', 'rainfall']) else 0.0,
-        "humidity_rainfall": round(float(corr_df.loc['humidity', 'rainfall']), 3) if not np.isnan(corr_df.loc['humidity', 'rainfall']) else 0.0
-    }
-
-    # -------------------------------------------------------------
-    # 6. Historical Climate Anomalies Detection (|Z| > 2.5)
-    # -------------------------------------------------------------
-    anomalies = []
-    for col in ['temperature', 'rainfall']:
-        valid_series = df[col].dropna()
-        if len(valid_series) > 10 and valid_series.std() > 0:
-            mean_val = valid_series.mean()
-            std_val = valid_series.std()
-            z_scores = (df[col] - mean_val) / std_val
-            outliers = df[z_scores.abs() > 2.5]
-            for _, r in outliers.head(15).iterrows():
-                rec_id = int(r['record_id']) if 'record_id' in r and pd.notna(r['record_id']) else 0
-                anomalies.append({
-                    "record_id": rec_id,
-                    "date": r['date_str'],
-                    "location": r['location'],
-                    "variable": col,
-                    "value": round(float(r[col]), 2),
-                    "mean": round(float(mean_val), 2),
-                    "deviation_sigma": round(float(z_scores.loc[r.name]), 2),
-                    "type": "Extreme High" if z_scores.loc[r.name] > 0 else "Extreme Low"
-                })
-
-    # -------------------------------------------------------------
-    # 7. Chart Generation
+    # 5. Chart Generation (Required Matplotlib Figures)
     # -------------------------------------------------------------
     chart_files = []
     if generate_plots:
@@ -303,8 +260,6 @@ def compute_analysis(df, location_filter=None, generate_plots=True):
         "monthly_aggregations": monthly_summary,
         "monthly_temperature_comparison": monthly_temp_comparison,
         "location_summary": loc_overall,
-        "correlations": correlations,
-        "historical_anomalies": anomalies,
         "charts": chart_files
     }
 
