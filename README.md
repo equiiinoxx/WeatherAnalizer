@@ -151,7 +151,18 @@ pip install -r analysis/requirements.txt
 
 ## Running the Application
 
-### Option A: Run Backend & Frontend in Two Terminal Windows
+### Single Command (Recommended — Starts Both Backend & Frontend Simultaneously):
+From the project root directory, run:
+```powershell
+cmd /c npm run dev
+# Or in standard bash / macOS / Linux:
+npm run dev
+```
+This executes `concurrently`, starting:
+- **Backend (Node.js/Express with nodemon)** on `http://localhost:5000` (labeled `[BACKEND]` in blue)
+- **Frontend (Vite/React)** on `http://localhost:5173` (labeled `[FRONTEND]` in green)
+
+### Alternative: Run Backend & Frontend in Separate Terminals
 
 #### Terminal 1 — Start the Express API Backend:
 ```powershell
