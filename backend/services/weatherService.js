@@ -223,6 +223,61 @@ async function getTrends(filters = {}) {
 }
 
 /**
+ * Daily aggregations (min, max, avg temperature, humidity, rainfall)
+ */
+async function getDailySummaries(filters = {}) {
+  const page = Math.max(1, parseInt(filters.page || 1, 10));
+  const limit = Math.min(200, Math.max(1, parseInt(filters.limit || 25, 10)));
+  const offset = (page - 1) * limit;
+
+  const { whereSql, params } = buildFilterClause(filters);
+
+  const querySql = `
+    SELECT 
+      DATE_FORMAT(observation_date, '%Y-%m-%d') AS date,
+      COUNT(*) AS observation_count,
+      ROUND(AVG(temperature), 2) AS avg_temperature,
+      MIN(temperature) AS min_temperature,
+      MAX(temperature) AS max_temperature,
+      ROUND(AVG(humidity), 2) AS avg_humidity,
+      MIN(humidity) AS min_humidity,
+      MAX(humidity) AS max_humidity,
+      ROUND(AVG(rainfall), 2) AS avg_rainfall,
+      MIN(rainfall) AS min_rainfall,
+      MAX(rainfall) AS max_rainfall,
+      ROUND(SUM(rainfall), 2) AS total_rainfall
+    FROM weather_records
+    ${whereSql}
+    GROUP BY observation_date
+    ORDER BY observation_date DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  const countSql = `
+    SELECT COUNT(DISTINCT observation_date) AS total 
+    FROM weather_records 
+    ${whereSql}
+  `;
+
+  const [rows] = await pool.query(querySql, [...params, limit, offset]);
+  const [countResult] = await pool.query(countSql, params);
+  const total = countResult[0].total;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    dailySummaries: rows,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+  };
+}
+
+/**
  * Export filtered records to CSV text
  */
 async function exportRecordsCsv(filters = {}) {
@@ -254,10 +309,73 @@ async function exportRecordsCsv(filters = {}) {
   return lines.join('\n');
 }
 
+/**
+ * Export daily summary metrics to CSV text
+ */
+async function exportDailySummaryCsv(filters = {}) {
+  const { whereSql, params } = buildFilterClause(filters);
+
+  const querySql = `
+    SELECT 
+      DATE_FORMAT(observation_date, '%Y-%m-%d') AS date,
+      COUNT(*) AS observation_count,
+      ROUND(AVG(temperature), 2) AS avg_temperature,
+      MIN(temperature) AS min_temperature,
+      MAX(temperature) AS max_temperature,
+      ROUND(AVG(humidity), 2) AS avg_humidity,
+      MIN(humidity) AS min_humidity,
+      MAX(humidity) AS max_humidity,
+      ROUND(AVG(rainfall), 2) AS avg_rainfall,
+      ROUND(SUM(rainfall), 2) AS total_rainfall,
+      MAX(rainfall) AS max_rainfall
+    FROM weather_records
+    ${whereSql}
+    GROUP BY observation_date
+    ORDER BY observation_date ASC
+  `;
+
+  const [rows] = await pool.query(querySql, params);
+
+  const header = [
+    'date',
+    'observation_count',
+    'avg_temperature_c',
+    'min_temperature_c',
+    'max_temperature_c',
+    'avg_humidity_pct',
+    'min_humidity_pct',
+    'max_humidity_pct',
+    'avg_rainfall_mm',
+    'total_rainfall_mm',
+    'max_rainfall_mm'
+  ];
+
+  const lines = [header.join(',')];
+  for (const r of rows) {
+    lines.push([
+      r.date,
+      r.observation_count,
+      r.avg_temperature ?? '',
+      r.min_temperature ?? '',
+      r.max_temperature ?? '',
+      r.avg_humidity ?? '',
+      r.min_humidity ?? '',
+      r.max_humidity ?? '',
+      r.avg_rainfall ?? '',
+      r.total_rainfall ?? '',
+      r.max_rainfall ?? ''
+    ].join(','));
+  }
+
+  return lines.join('\n');
+}
+
 module.exports = {
   getRecords,
   getLocations,
   getSummaryMetrics,
   getTrends,
-  exportRecordsCsv
+  getDailySummaries,
+  exportRecordsCsv,
+  exportDailySummaryCsv
 };

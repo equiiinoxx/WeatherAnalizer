@@ -153,10 +153,33 @@ async function getAllQualityIssues(req, res) {
   }
 }
 
+/**
+ * Export data quality issues for a batch (or all) to CSV
+ * Endpoint: GET /api/weather/imports/:batchId/export-issues OR GET /api/weather/quality-issues/export
+ */
+async function exportBatchIssues(req, res) {
+  try {
+    const batchId = req.params.batchId || req.params.id || req.query.batchId;
+    const csvData = await importService.exportBatchIssuesCsv(batchId ? Number(batchId) : null);
+    
+    const filename = batchId ? `data_quality_issues_batch_${batchId}.csv` : 'data_quality_issues_all.csv';
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvData);
+  } catch (error) {
+    console.error('Export quality issues error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to export quality issues: ' + error.message
+    });
+  }
+}
+
 module.exports = {
   handleUpload,
   listBatches,
   getBatchDetails,
   getBatchIssues,
-  getAllQualityIssues
+  getAllQualityIssues,
+  exportBatchIssues
 };

@@ -564,11 +564,54 @@ async function getAllQualityIssues(limit = 100, offset = 0, batchId = null) {
   };
 }
 
+/**
+ * Export data quality issues for a batch (or all batches) to CSV
+ */
+async function exportBatchIssuesCsv(batchId = null) {
+  let whereSql = '';
+  const params = [];
+
+  if (batchId) {
+    whereSql = 'WHERE d.batch_id = ?';
+    params.push(Number(batchId));
+  }
+
+  const query = `
+    SELECT d.issue_id, d.batch_id, b.filename, d.source_row_number, 
+           d.field_name, d.issue_description, d.raw_value, d.created_at
+    FROM data_quality_issues d
+    JOIN import_batches b ON d.batch_id = b.batch_id
+    ${whereSql}
+    ORDER BY d.batch_id DESC, d.source_row_number ASC, d.issue_id ASC
+  `;
+
+  const [rows] = await pool.query(query, params);
+
+  const header = ['issue_id', 'batch_id', 'filename', 'source_row_number', 'field_name', 'issue_description', 'raw_value', 'logged_at'];
+  const lines = [header.join(',')];
+
+  for (const r of rows) {
+    lines.push([
+      r.issue_id,
+      r.batch_id,
+      `"${String(r.filename).replace(/"/g, '""')}"`,
+      r.source_row_number,
+      `"${String(r.field_name).replace(/"/g, '""')}"`,
+      `"${String(r.issue_description).replace(/"/g, '""')}"`,
+      `"${String(r.raw_value ?? '').replace(/"/g, '""')}"`,
+      new Date(r.created_at).toISOString()
+    ].join(','));
+  }
+
+  return lines.join('\n');
+}
+
 module.exports = {
   processCsvUpload,
   getImportBatches,
   getBatchById,
   getBatchQualityIssues,
   getAllQualityIssues,
+  exportBatchIssuesCsv,
   REQUIRED_COLUMNS
 };

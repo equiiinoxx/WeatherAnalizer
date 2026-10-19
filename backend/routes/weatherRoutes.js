@@ -20,11 +20,15 @@ router.post('/upload', handleUploadMiddleware, importController.handleUpload);
 router.get('/imports', importController.listBatches);
 router.get('/imports/:batchId', importController.getBatchDetails);
 router.get('/imports/:batchId/issues', importController.getBatchIssues);
+router.get('/imports/:batchId/export-issues', importController.exportBatchIssues);
 router.get('/quality-issues', importController.getAllQualityIssues);
+router.get('/quality-issues/export', importController.exportBatchIssues);
 
-// Metrics, trends, and export endpoints
+// Metrics, daily summaries, trends, and export endpoints
 router.get('/summary', weatherController.getSummary);
+router.get('/daily', weatherController.getDailySummaries);
 router.get('/trends', weatherController.getTrends);
 router.get('/export', weatherController.exportCsv);
+router.get('/export-daily', weatherController.exportDailyCsv);
 
 module.exports = router;

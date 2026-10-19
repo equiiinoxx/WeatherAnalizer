@@ -1,22 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import OverviewTab from './components/OverviewTab';
-import IngestionTab from './components/IngestionTab';
-import RecordsTab from './components/RecordsTab';
-import VisualAnalyticsTab from './components/VisualAnalyticsTab';
-import PythonAnalysisTab from './components/PythonAnalysisTab';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Sidebar from './components/Sidebar';
+import OverviewPage from './pages/OverviewPage';
+import UploadPage from './pages/UploadPage';
+import RecordsPage from './pages/RecordsPage';
+import DailySummaryPage from './pages/DailySummaryPage';
+import MonthlyAnalysisPage from './pages/MonthlyAnalysisPage';
+import ChartsPage from './pages/ChartsPage';
+import DataQualityPage from './pages/DataQualityPage';
 import { getHealth } from './services/api';
 import './App.css';
 
 function App() {
-  const [activeTab, setActiveTab] = useState('overview');
   const [health, setHealth] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     checkHealth();
-    const interval = setInterval(checkHealth, 30000);
-    return () => clearInterval(interval);
+    const timer = setInterval(checkHealth, 30000);
+    return () => clearInterval(timer);
   }, []);
 
   const checkHealth = async () => {
@@ -28,60 +30,61 @@ function App() {
     }
   };
 
-  const handleDataImported = () => {
-    setRefreshKey((prev) => prev + 1);
-  };
-
   return (
-    <div className="app-container">
-      <Navbar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        health={health}
-      />
+    <BrowserRouter>
+      <div className="dashboard-layout">
+        <Sidebar
+          health={health}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
 
-      <main className="main-content">
-        {activeTab === 'overview' && (
-          <OverviewTab
-            key={`overview-${refreshKey}`}
-            onNavigateTab={(tab) => setActiveTab(tab)}
-          />
-        )}
+        <div className="dashboard-main">
+          {/* Mobile Top Header */}
+          <header className="mobile-top-bar">
+            <button
+              className="hamburger-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open Navigation Menu"
+            >
+              ☰
+            </button>
+            <div className="mobile-brand">
+              <span className="brand-icon">🌦️</span>
+              <span className="brand-text">Weather Analytics</span>
+            </div>
+            <div className={`health-dot ${health?.status === 'ok' ? 'online' : 'offline'}`} title="MySQL Status"></div>
+          </header>
 
-        {activeTab === 'ingestion' && (
-          <IngestionTab
-            key={`ingestion-${refreshKey}`}
-            onDataImported={handleDataImported}
-          />
-        )}
+          <main className="content-area">
+            <Routes>
+              <Route path="/" element={<OverviewPage />} />
+              <Route path="/upload" element={<UploadPage />} />
+              <Route path="/records" element={<RecordsPage />} />
+              <Route path="/daily-summary" element={<DailySummaryPage />} />
+              <Route path="/monthly-analysis" element={<MonthlyAnalysisPage />} />
+              <Route path="/charts" element={<ChartsPage />} />
+              <Route path="/data-quality" element={<DataQualityPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
 
-        {activeTab === 'records' && (
-          <RecordsTab key={`records-${refreshKey}`} />
-        )}
-
-        {activeTab === 'visual' && (
-          <VisualAnalyticsTab key={`visual-${refreshKey}`} />
-        )}
-
-        {activeTab === 'python' && (
-          <PythonAnalysisTab key={`python-${refreshKey}`} />
-        )}
-      </main>
-
-      <footer className="footer">
-        <div className="footer-content">
-          <p>
-            <strong>Weather Data Analysis System</strong> — Historical Climate Observation & Quality Assurance Platform
-          </p>
-          <p className="footer-tech">
-            Stack: React • Vite • Express • MySQL 8.0 • Python (Pandas / NumPy / Matplotlib) • Recharts
-          </p>
-          <p className="footer-note">
-            Strictly historical observations analysis. Forecasting and predictive modeling intentionally omitted.
-          </p>
+          <footer className="dashboard-footer">
+            <div className="footer-container">
+              <p>
+                <strong>Weather Data Analysis System</strong> — Historical Meteorological Intelligence & Quality Platform
+              </p>
+              <p className="footer-stack">
+                Stack: React 19 • Vite • Recharts • Node.js/Express • MySQL 8.0 • Python (Pandas/NumPy/Matplotlib)
+              </p>
+              <p className="footer-disclaimer">
+                Strictly historical observation records. Predictive forecasting is intentionally omitted per system specifications.
+              </p>
+            </div>
+          </footer>
         </div>
-      </footer>
-    </div>
+      </div>
+    </BrowserRouter>
   );
 }
 

@@ -133,10 +133,65 @@ async function exportCsv(req, res) {
   }
 }
 
+/**
+ * Get daily summary metrics (min, max, avg temp, humidity, rainfall)
+ * Endpoint: GET /api/weather/daily
+ */
+async function getDailySummaries(req, res) {
+  try {
+    const filters = {
+      page: req.query.page,
+      limit: req.query.limit,
+      location: req.query.location,
+      startDate: req.query.startDate || req.query.from,
+      endDate: req.query.endDate || req.query.to
+    };
+
+    const result = await weatherService.getDailySummaries(filters);
+    res.json({
+      status: 'success',
+      data: result
+    });
+  } catch (error) {
+    console.error('Get daily summaries error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve daily summaries: ' + error.message
+    });
+  }
+}
+
+/**
+ * Export daily summary metrics to CSV
+ * Endpoint: GET /api/weather/export-daily
+ */
+async function exportDailyCsv(req, res) {
+  try {
+    const filters = {
+      location: req.query.location,
+      startDate: req.query.startDate || req.query.from,
+      endDate: req.query.endDate || req.query.to
+    };
+
+    const csvData = await weatherService.exportDailySummaryCsv(filters);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="weather_daily_summary_export.csv"');
+    res.send(csvData);
+  } catch (error) {
+    console.error('Export daily summary CSV error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to export daily summary CSV: ' + error.message
+    });
+  }
+}
+
 module.exports = {
   listRecords,
   getLocations,
   getSummary,
   getTrends,
-  exportCsv
+  getDailySummaries,
+  exportCsv,
+  exportDailyCsv
 };
