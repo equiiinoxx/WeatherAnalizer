@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Environment & Credentials (NEVER commit secrets)
+.env
+*.env
+backend/.env
+
+# Temporary / uploads / build artifacts
+backend/uploads/*
+!backend/uploads/.gitkeep
+frontend/dist/
+analysis/charts/*
+!analysis/charts/.gitkeep
+
+# System files
+.DS_Store
+Thumbs.db
